@@ -1,4 +1,4 @@
-package com.devproject.bot;
+package main;
 
 import org.dreambot.api.input.Mouse;
 import org.dreambot.api.methods.Calculations;
@@ -22,8 +22,8 @@ import org.dreambot.api.wrappers.interactive.GameObject;
 import org.dreambot.api.wrappers.items.Item;
 
 import java.awt.*;
+import java.io.InputStream;
 import java.util.List;
-import java.io.File;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -32,9 +32,9 @@ import static org.dreambot.api.wrappers.widgets.Menu.getWidth;
 
 @ScriptManifest(category = Category.WOODCUTTING,
         name = "DevProject",
-        author = "ThePoff", version = 0.5,
-        description = "Bot",
-        image = "https://imgur.com/a/4lI4OJH")
+        author = "ThePoff", version = 1.0,
+        description = "Bot"
+)
 
 // A Simple Tree Woodcutter in front of the Varrok Exchange. Support Bronze Axe Handling from Inventory. Future Update comming soon.
 
@@ -63,12 +63,25 @@ public class Main extends AbstractScript {
     @Override
     public void onStart(){
         log("Starting Timberman");
-        File logFile = new File("og.txt");
-        List<Point> movementData = LogParser.parseLog(logFile);
+        InputStream logStream = getClass().getClassLoader().getResourceAsStream("MouseCoordinates.txt");
+
+        if(logStream == null) {
+            log("Could not find MouseCoordinates.txt in resources. Stoping script.");
+            stop();
+            return;
+        }
+        List<Point> movementData = LogParser.parseLog(logStream);
+        if(movementData.isEmpty()) {
+            log("No valid movement found. Stopping script.");
+            stop();
+            return;
+        }
         Mouse.setMouseAlgorithm(new WindMouseML(movementData));
 
-        int randomMouseSpeed = Calculations.random(12,48);
+        int randomMouseSpeed = Calculations.random(12, 48);
         MouseSettings.setSpeed(randomMouseSpeed);
+
+        log("Mouse algorithm initialized with random speed: " + randomMouseSpeed);
     }
 
 
@@ -132,13 +145,13 @@ public class Main extends AbstractScript {
 
 
     private boolean hasBronzeAxe() {
-        Item equippedAxe = Equipment.getItemInSlot(3); // 3 = Main hand
+        Item equippedAxe = Equipment.getItemInSlot(3); // 3 = main.Main hand
         return (equippedAxe != null && equippedAxe.getName().equals("Bronze axe"))
                 || Inventory.contains("Bronze axe");
     }
 
     private boolean hasMithrilAxe() {
-        Item equippedAxe = Equipment.getItemInSlot(3); // 3 = Main hand
+        Item equippedAxe = Equipment.getItemInSlot(3); // 3 = main.Main hand
         return (equippedAxe != null && equippedAxe.getName().equals("Mithril axe"))
                 || Inventory.contains("Mithril axe");
     }

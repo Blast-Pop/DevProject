@@ -1,4 +1,4 @@
-package com.devproject.bot;
+package main;
 
 import org.dreambot.api.input.Mouse;
 import org.dreambot.api.input.event.impl.mouse.MouseButton;
@@ -18,6 +18,7 @@ public class WindMouseML implements MouseAlgorithm {
     private int mouseWind = Calculations.random(1, 3);
 
     private final List<Point> movementData;
+    private boolean isExecutingMovement = false;
 
     public WindMouseML(List<Point> movementData) {
         this.movementData = movementData;
@@ -36,22 +37,44 @@ public class WindMouseML implements MouseAlgorithm {
     }
 
     private void executeMouseMovement(Point target) {
-        Point current = Mouse.getPosition();
-        for (Point step : movementData) {
-            Point adjustedStep = adjustToTarget(step, target, current);
-            setMousePosition(adjustedStep);
-            sleep(Calculations.random(5, 25));
+        if (isExecutingMovement) return; // Prevent recursion
+        isExecutingMovement = true;
+
+        try {
+            Point current = Mouse.getPosition();
+            for (Point step : movementData) {
+                Point adjustedStep = adjustToTarget(step, target, current);
+                setMousePosition(adjustedStep);
+                sleep(Calculations.random(5, 25));
+            }
+        } finally {
+            isExecutingMovement = false; // Reset flag
         }
     }
 
     private Point adjustToTarget(Point step, Point target, Point current) {
         int adjustedX = current.x + (int) ((step.x / 100.0) * (target.x - current.x));
         int adjustedY = current.y + (int) ((step.y / 100.0) * (target.y - current.y));
-        return new Point(adjustedX, adjustedY);
+        Point adjustedPoint = new Point(adjustedX, adjustedY);
+
+        // Ensure the point is within screen bounds
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        if (adjustedPoint.x < 0 || adjustedPoint.x > screenSize.width ||
+                adjustedPoint.y < 0 || adjustedPoint.y > screenSize.height) {
+            Logger.log("Adjusted point out of bounds: " + adjustedPoint);
+        }
+
+        return adjustedPoint;
     }
 
     private void setMousePosition(Point point) {
-        Mouse.hop(point);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        if (point.x >= 0 && point.x <= screenSize.width && point.y >= 0 && point.y <= screenSize.height) {
+            Logger.log("Moving mouse to: " + point);
+            Mouse.move(point);
+        } else {
+            Logger.log("Skipping invalid mouse position: " + point);
+        }
     }
 
     private void sleep(int ms) {
